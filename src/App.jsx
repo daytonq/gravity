@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { Stage } from "@pixi/react";
 import { calculateCanvasSize } from "./common.ts";
 import SpaceObjects from "./components/SpaceObjects.jsx";
 import * as PIXI from "pixi.js";
 import { socket } from "./socket.js";
+import SimulationConfigurator from "./components/SimulationConfigurator.jsx";
 
 const App = () => {
-  const keyMap = { w: 'up', s: 'down', a: 'left', d: 'right' };
+  const keyMap = new Map([['w', 'up'], ['s', 'down'], ['a', 'left'], ['d', 'right']]);
   const [canvasSize, setCanvasSize] = useState(calculateCanvasSize);
   const [positions, setPositions] = useState([]);
   const [socketId, setSocketId] = useState();
@@ -29,35 +30,23 @@ const App = () => {
     })
   }
 
-  const sendPressKey = async (direction, isPressed) => {
-    console.log(socket);
-    if (direction === 'right' || direction === 'left' || direction === 'up' || direction === 'down') {
+  const handleKeyEvent = (event) => {
+    const direction = keyMap.get(event.key.toLowerCase());
+    if (direction) {
       socket.emit('button_press', {
-        "is_pressed": isPressed,
+        "is_pressed": event.type === 'keydown',
         "direction": direction,
       })
     }
-  }
-
-  const handleKeyPress = (event) => {
-    const direction = event.key.toLowerCase();
-    sendPressKey(keyMap[direction], true);
-    console.log(keyMap[direction], 'true')
   };
 
-  const handleKeyRelease = (event) => {
-    const direction = event.key.toLowerCase();
-    sendPressKey(keyMap[direction], false);
-    console.log(keyMap[direction], 'false')
-  };
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyPress);
-    window.addEventListener('keyup', handleKeyRelease);
+    window.addEventListener('keydown', handleKeyEvent);
+    window.addEventListener('keyup', handleKeyEvent);
+
     socket.on("update_step", (data) => {
       setPositions(parseData(data));
-      console.log(data);
-      console.log(socket)
     });
 
     socket.on('connect', () => {
@@ -65,16 +54,24 @@ const App = () => {
     });
 
     return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-      window.removeEventListener('keyup', handleKeyRelease);
+      window.removeEventListener('keydown', handleKeyEvent);
+      window.removeEventListener('keyup', handleKeyEvent);
     };
   }, []);
 
   return (
-    <Stage width={canvasSize.width} height={canvasSize.height} options={{ backgroundColor: 0x000000 }}>
-      <SpaceObjects positions={positions} canvasSize={canvasSize} socketId={socketId} socket={socket} />
-    </Stage>
+    <div className="simulation-container">
+      <div className="configurator-panel">
+        <SimulationConfigurator socketId={socketId} />
+      </div>
+      <div className="canvas-panel">
+        <Stage width={canvasSize.width*0.7} height={canvasSize.height} options={{ backgroundColor: 0x000000 }}>
+          <SpaceObjects positions={positions} canvasSize={canvasSize} socketId={socketId} socket={socket} />
+        </Stage>
+      </div>
+    </div>
   );
+  
 };
 
 export default App;

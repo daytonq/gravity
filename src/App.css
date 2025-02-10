@@ -1,0 +1,20 @@
+.simulation-container {
+    display: flexbox;
+  }
+  
+  .configurator-panel {
+    width: 30%;
+    background-color: #2d2d2d;
+    color: white;
+    overflow-y: auto;
+    z-index: 1;
+  }
+  
+  .canvas-panel {
+    width: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 0;
+  }
+  
